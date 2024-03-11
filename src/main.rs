@@ -25,6 +25,7 @@ impl log::Log for ConsoleLogger {
     fn flush(&self) {}
 }
 
+/// Hash a file and return its sha256 hash value
 fn sha256sum(path: &Path) -> Result<String, io::Error> {
     let file = match File::open(&path) {
         Err(err) => return Err(err),
@@ -47,14 +48,7 @@ fn sha256sum(path: &Path) -> Result<String, io::Error> {
     Ok(HEXLOWER.encode(digest.as_ref()))
 }
 
-fn is_not_hidden(entry: &DirEntry) -> bool {
-    entry
-        .file_name()
-        .to_str()
-        .map(|s| entry.depth() == 0 || !s.starts_with("."))
-        .unwrap_or(false)
-}
-
+/// Check if the path is a subdirectory of the reference path
 fn is_subdirectory(entry: &PathBuf, reference: &PathBuf) -> bool {
     entry
         .to_str()
@@ -62,10 +56,12 @@ fn is_subdirectory(entry: &PathBuf, reference: &PathBuf) -> bool {
         .starts_with(reference.to_str().unwrap())
 }
 
+/// Check if directory entry is a file
 fn is_file(entry: &DirEntry) -> bool {
     entry.file_type().is_file()
 }
 
+/// Checks if the string equals the empty hash
 fn is_empty_hash(hash: &str) -> bool {
     hash.eq("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
 }
@@ -94,14 +90,14 @@ fn main() {
     assert!(reference_dir.is_dir() == true);
     assert!(is_subdirectory(&reference_dir, &root_dir));
 
-    let dir_list: Vec<DirEntry> = WalkDir::new(root_dir.clone())
+    let root_dirs: Vec<DirEntry> = WalkDir::new(root_dir.clone())
         .into_iter()
         .filter_entry(|e| !is_subdirectory(&e.clone().into_path(), &reference_dir))
         .filter_map(|v| v.ok())
         .collect();
-    let file_list: Vec<DirEntry> = dir_list.into_iter().filter(|e| is_file(e)).collect();
+    let root_files: Vec<DirEntry> = root_dirs.into_iter().filter(|e| is_file(e)).collect();
 
-    let hash_list: Vec<(String, String)> = file_list
+    let root_pairs: Vec<(String, String)> = root_files
         .into_iter()
         .map(|e| {
             (
@@ -116,20 +112,17 @@ fn main() {
         })
         .filter(|pair | !is_empty_hash(pair.0.as_str()))
         .collect();
-    // hash_list
-    //     .into_iter()
-    //     .for_each(|s| println!("{} {}", s.0, s.1));
 
-    let reference_dir_list: Vec<DirEntry> = WalkDir::new(reference_dir)
+    let reference_dirs: Vec<DirEntry> = WalkDir::new(reference_dir)
         .into_iter()
         .filter_map(|v| v.ok())
         .collect();
-    let reference_file_list: Vec<DirEntry> = reference_dir_list
+    let reference_files: Vec<DirEntry> = reference_dirs
         .into_iter()
         .filter(|e| is_file(e))
         .collect();
 
-    let reference_hash_list: Vec<(String, String)> = reference_file_list
+    let reference_pairs: Vec<(String, String)> = reference_files
         .into_iter()
         .map(|e| {
             (
@@ -146,17 +139,17 @@ fn main() {
         .collect();
 
     println!("Check for duplicates");
-    let reference_hashes: Vec<String> = reference_hash_list.into_iter().map(|p| p.0).collect();
-    let duplicates_list : Vec<(String, String)> = hash_list
+    let reference_hashes: Vec<String> = reference_pairs.into_iter().map(|p| p.0).collect();
+    let duplicate_pairs : Vec<(String, String)> = root_pairs
         .into_iter()
         .filter(|pair| reference_hashes.contains(&pair.0))
         .collect();
 
-    if duplicates_list.len() == 0 {
+    if duplicate_pairs.len() == 0 {
         println!("No duplicates found")
     }
 
-    duplicates_list
+    duplicate_pairs
         .into_iter()
         .for_each(|s| println!("{} {}", s.0, s.1));
 }
