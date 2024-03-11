@@ -55,3 +55,25 @@ fn main() {
         Ok(hash_str) => info!("{} {}", hash_str, path)
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use crate::sha256sum;
+
+    #[test]
+    fn file_exists() {
+        let path : &str = "test/test.txt";
+        let result = sha256sum(Path::new(path)).unwrap();
+        assert_eq!(result, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+    }
+
+    #[test]
+    fn file_does_not_exists() {
+        let path : &str = "test/test2.txt";
+        let result = sha256sum(Path::new(path));
+        assert!(result.is_err());
+    }
+}
