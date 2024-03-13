@@ -12,7 +12,7 @@ It recurses a reference and a root directory, finds file duplicates from the ref
     See the Rust [CLI book](https://rust-cli.github.io/book/index.html) for further details.
     Use [clap](https://docs.rs/clap/latest/clap/) for command line argument parsing
 - [ ] Add the method to remove files
-- [ ] Add the command line flags `-n, --dry-run` to don't remove files as in `git rm`
+- [x] Add the command line flags `-n, --dry-run` to don't remove files as in `git rm`
 - [ ] Modularize source code into different files
 - [ ] Add additional unit tests with an example file structure
 - [ ] Create a docker container for running build tests

@@ -15,11 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use clap::Parser;
+use clap::{ArgAction, Parser};
 use data_encoding::HEXLOWER;
 use log::{error, info, warn};
 use log::{Level, LevelFilter, Metadata, Record};
-use sha2::digest::typenum::SquareRoot;
 use sha2::{Digest, Sha256};
 use std::fs::{self, File};
 use std::io::{self, BufReader, Read};
@@ -46,13 +45,16 @@ impl log::Log for ConsoleLogger {
 
 /// Remove duplicated files in the reference directory that are found in the root directory tree.
 #[derive(Parser)]
+#[clap(author="Manuel Amersdorfer", version)]
 struct Cli {
     /// Reference directory path
     reference_dir: PathBuf,
     /// Root directory path
     root_dir: PathBuf,
     /// Perform a dry-run without removing any file
-    dry_run: Option<bool>,
+    #[clap(long, short, action(ArgAction::SetTrue))]
+    dry_run: bool,
+
 }
 
 /// Hash a file and return its sha256 hash value
@@ -197,6 +199,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     duplicate_pairs
         .into_iter()
         .for_each(|s| println!("{} {}", s.0, s.1));
+
+    if !args.dry_run {
+        info!("Removing files...");
+        todo!("Removing files...");
+    }
 
     Ok(())
 }
