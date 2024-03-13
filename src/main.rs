@@ -96,7 +96,7 @@ fn is_empty_hash(hash: &str) -> bool {
     hash.eq("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize logger
     let _ = log::set_logger(&CONSOLE_LOGGER);
     log::set_max_level(LevelFilter::Info);
@@ -104,27 +104,35 @@ fn main() {
     // Parse command line arguments
     let args = Cli::parse();
     let root_dir = match Path::new(&args.root_dir).canonicalize() {
-        Err(err) => panic!("Error checking root path: {}", err),
         Ok(dir) => dir,
+        Err(err) => {
+            error!("Error checking root path: {}", err);
+            return Err(err.into());
+        }
     };
     let reference_dir = match Path::new(&args.reference_dir).canonicalize() {
-        Err(err) => panic!("Error checking reference path: {}", err),
         Ok(dir) => dir,
+        Err(err) => {
+            error!("Error checking reference path: {}", err);
+            return Err(err.into());
+        }
     };
-    if !root_dir.is_dir() {
+    if root_dir.is_dir() {
+        info!("Root directory: {}", root_dir.to_str().unwrap());
+    } else {
         warn!(
             "Root path {} should be a directory",
             root_dir.to_str().unwrap()
         );
     }
-    if !reference_dir.is_dir() {
+    if reference_dir.is_dir() {
+        info!("Reference directory: {}", reference_dir.to_str().unwrap());
+    } else {
         warn!(
             "Reference path {} should be a directory",
             reference_dir.to_str().unwrap()
         );
     }
-    info!("Root directory: {}", root_dir.to_str().unwrap());
-    info!("Reference directory: {}", reference_dir.to_str().unwrap());
 
     // Calculate list of hashes for the root directory tree
     let root_dirs: Vec<DirEntry> = WalkDir::new(root_dir.clone())
@@ -189,6 +197,8 @@ fn main() {
     duplicate_pairs
         .into_iter()
         .for_each(|s| println!("{} {}", s.0, s.1));
+
+    Ok(())
 }
 
 #[cfg(test)]
