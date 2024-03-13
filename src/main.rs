@@ -193,6 +193,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .into_par_iter()
         .filter(|pair| root_hashes.contains(&pair.0))
         .collect();
+    duplicate_pairs.sort_by(|a, b| a.1.cmp(&b.1));  
 
     if duplicate_pairs.len() == 0 {
         println!("No duplicates found")
