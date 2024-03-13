@@ -19,6 +19,7 @@ use clap::{ArgAction, Parser};
 use data_encoding::HEXLOWER;
 use log::{error, info, warn};
 use log::{Level, LevelFilter, Metadata, Record};
+use rayon::prelude::*;
 use sha2::{Digest, Sha256};
 use std::fs::{self, File};
 use std::io::{self, BufReader, Read};
@@ -45,7 +46,7 @@ impl log::Log for ConsoleLogger {
 
 /// Remove duplicated files in the reference directory that are found in the root directory tree.
 #[derive(Parser)]
-#[clap(author="Manuel Amersdorfer", version)]
+#[clap(author = "Manuel Amersdorfer", version)]
 struct Cli {
     /// Reference directory path
     reference_dir: PathBuf,
@@ -54,7 +55,6 @@ struct Cli {
     /// Perform a dry-run without removing any file
     #[clap(long, short, action(ArgAction::SetTrue))]
     dry_run: bool,
-
 }
 
 /// Hash a file and return its sha256 hash value
@@ -142,10 +142,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .filter_entry(|e| !is_subdirectory(&e.clone().into_path(), &reference_dir))
         .filter_map(|v| v.ok())
         .collect();
-    let root_files: Vec<DirEntry> = root_dirs.into_iter().filter(|e| is_file(e)).collect();
+    let root_files: Vec<DirEntry> = root_dirs.into_par_iter().filter(|e| is_file(e)).collect();
 
     let root_pairs: Vec<(String, String)> = root_files
-        .into_iter()
+        .into_par_iter()
         .map(|e| {
             (
                 sha256sum(e.path()).unwrap_or(String::new()),
@@ -165,11 +165,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .into_iter()
         .filter_map(|v| v.ok())
         .collect();
-    let reference_files: Vec<DirEntry> =
-        reference_dirs.into_iter().filter(|e| is_file(e)).collect();
+    let reference_files: Vec<DirEntry> = reference_dirs
+        .into_par_iter()
+        .filter(|e| is_file(e))
+        .collect();
 
     let reference_pairs: Vec<(String, String)> = reference_files
-        .into_iter()
+        .into_par_iter()
         .map(|e| {
             (
                 sha256sum(e.path()).unwrap_or(String::new()),
@@ -186,9 +188,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Find duplicates
     println!("Check for duplicates");
-    let root_hashes: Vec<String> = root_pairs.into_iter().map(|p| p.0).collect();
-    let duplicate_pairs: Vec<(String, String)> = reference_pairs
-        .into_iter()
+    let root_hashes: Vec<String> = root_pairs.into_par_iter().map(|p| p.0).collect();
+    let mut duplicate_pairs: Vec<(String, String)> = reference_pairs
+        .into_par_iter()
         .filter(|pair| root_hashes.contains(&pair.0))
         .collect();
 
@@ -197,7 +199,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     duplicate_pairs
-        .into_iter()
+        .into_par_iter()
         .for_each(|s| println!("{} {}", s.0, s.1));
 
     if !args.dry_run {

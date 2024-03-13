@@ -18,10 +18,10 @@ It recurses a reference and a root directory, finds file duplicates from the ref
 - [ ] Modularize source code into different files
 - [ ] Add additional unit tests with an example file structure
 - [ ] Create a docker container for running build tests
-- [ ] Create Github and Gitlab CI
+- [x] Create Github and Gitlab CI
 - [ ] Modularize the hash function to allow the usage of other hash algorithms
 - [ ] Benchmark implementation
-- [ ] Parallelize iterators and hashing of files in multiple threads
+- [x] Parallelize iterators and hashing of files in multiple threads
 - [ ] Write documentation with usage examples
 - [ ] Extend logger output
 - [ ] Use a hashmap to find duplicated hashes decreasing the computational complexity
