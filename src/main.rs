@@ -215,12 +215,22 @@ mod tests {
     use crate::sha256sum;
 
     #[test]
+    fn empty_file_exists() {
+        let path: &str = "test/test_empty.txt";
+        let result = sha256sum(Path::new(path)).unwrap();
+        assert_eq!(
+            result,
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
+    }
+
+    #[test]
     fn file_exists() {
         let path: &str = "test/test.txt";
         let result = sha256sum(Path::new(path)).unwrap();
         assert_eq!(
             result,
-            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
         );
     }
 
