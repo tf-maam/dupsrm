@@ -8,7 +8,7 @@ It recurses a reference and a root directory, finds file duplicates from the ref
 - [x] Recursively iterate root and reference directories
 - [x] Calculate the hash of each file and store them in a list aside from the path
 - [x] Create a list of duplicates in the reference directory
-- [ ] Add command line interface to define reference and root paths \
+- [x] Add command line interface to define reference and root paths \
     See the Rust [CLI book](https://rust-cli.github.io/book/index.html) for further details.
     Use [clap](https://docs.rs/clap/latest/clap/) for command line argument parsing
 - [ ] Add the method to remove files

@@ -15,10 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
+use clap::Parser;
 use data_encoding::HEXLOWER;
-use log::{error, info};
+use log::{error, info, warn};
 use log::{Level, LevelFilter, Metadata, Record};
+use sha2::digest::typenum::SquareRoot;
 use sha2::{Digest, Sha256};
 use std::fs::{self, File};
 use std::io::{self, BufReader, Read};
@@ -41,6 +42,17 @@ impl log::Log for ConsoleLogger {
     }
 
     fn flush(&self) {}
+}
+
+/// Remove duplicated files in the reference directory that are found in the root directory tree.
+#[derive(Parser)]
+struct Cli {
+    /// Reference directory path
+    reference_dir: PathBuf,
+    /// Root directory path
+    root_dir: PathBuf,
+    /// Perform a dry-run without removing any file
+    dry_run: Option<bool>,
 }
 
 /// Hash a file and return its sha256 hash value
@@ -85,29 +97,36 @@ fn is_empty_hash(hash: &str) -> bool {
 }
 
 fn main() {
+    // Initialize logger
     let _ = log::set_logger(&CONSOLE_LOGGER);
     log::set_max_level(LevelFilter::Info);
 
-    let path: &str = "test.txt";
-    match sha256sum(Path::new(path)) {
-        Err(err) => error!("{}: {}", err, path),
-        Ok(hash_str) => info!("{} {}", hash_str, path),
+    // Parse command line arguments
+    let args = Cli::parse();
+    let root_dir = match Path::new(&args.root_dir).canonicalize() {
+        Err(err) => panic!("Error checking root path: {}", err),
+        Ok(dir) => dir,
+    };
+    let reference_dir = match Path::new(&args.reference_dir).canonicalize() {
+        Err(err) => panic!("Error checking reference path: {}", err),
+        Ok(dir) => dir,
+    };
+    if !root_dir.is_dir() {
+        warn!(
+            "Root path {} should be a directory",
+            root_dir.to_str().unwrap()
+        );
     }
+    if !reference_dir.is_dir() {
+        warn!(
+            "Reference path {} should be a directory",
+            reference_dir.to_str().unwrap()
+        );
+    }
+    info!("Root directory: {}", root_dir.to_str().unwrap());
+    info!("Reference directory: {}", reference_dir.to_str().unwrap());
 
-    let root_dir = Path::new(".").canonicalize().unwrap();
-    let reference_dir = Path::new("target").canonicalize().unwrap();
-    println!("{}", reference_dir.to_str().unwrap());
-    assert!(reference_dir
-        .to_str()
-        .unwrap()
-        .starts_with(root_dir.to_str().unwrap()));
-    assert!(!root_dir
-        .to_str()
-        .unwrap()
-        .starts_with(reference_dir.to_str().unwrap()));
-    assert!(reference_dir.is_dir() == true);
-    assert!(is_subdirectory(&reference_dir, &root_dir));
-
+    // Calculate list of hashes for the root directory tree
     let root_dirs: Vec<DirEntry> = WalkDir::new(root_dir.clone())
         .into_iter()
         .filter_entry(|e| !is_subdirectory(&e.clone().into_path(), &reference_dir))
@@ -128,17 +147,16 @@ fn main() {
                 .to_string(),
             )
         })
-        .filter(|pair | !is_empty_hash(pair.0.as_str()))
+        .filter(|pair| !is_empty_hash(pair.0.as_str()))
         .collect();
 
+    // Calculate list of hashes for the reference directory tree
     let reference_dirs: Vec<DirEntry> = WalkDir::new(reference_dir)
         .into_iter()
         .filter_map(|v| v.ok())
         .collect();
-    let reference_files: Vec<DirEntry> = reference_dirs
-        .into_iter()
-        .filter(|e| is_file(e))
-        .collect();
+    let reference_files: Vec<DirEntry> =
+        reference_dirs.into_iter().filter(|e| is_file(e)).collect();
 
     let reference_pairs: Vec<(String, String)> = reference_files
         .into_iter()
@@ -153,12 +171,13 @@ fn main() {
                 .to_string(),
             )
         })
-        .filter(|pair | !is_empty_hash(pair.0.as_str()))
+        .filter(|pair| !is_empty_hash(pair.0.as_str()))
         .collect();
 
+    // Find duplicates
     println!("Check for duplicates");
     let reference_hashes: Vec<String> = reference_pairs.into_iter().map(|p| p.0).collect();
-    let duplicate_pairs : Vec<(String, String)> = root_pairs
+    let duplicate_pairs: Vec<(String, String)> = root_pairs
         .into_iter()
         .filter(|pair| reference_hashes.contains(&pair.0))
         .collect();
