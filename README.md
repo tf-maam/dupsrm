@@ -7,9 +7,9 @@ It recurses a reference and a root directory, finds file duplicates from the ref
 
 ## Usage
 
+```text
 Remove duplicated files in the reference directory that are found in the root directory tree
 
-```text
 Usage: dupsrm [OPTIONS] <REFERENCE_DIR> <ROOT_DIR>
 
 Arguments:
