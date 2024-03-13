@@ -17,8 +17,9 @@
 
 use clap::{ArgAction, Parser};
 use data_encoding::HEXLOWER;
-use log::{error, info, warn};
-use log::{Level, LevelFilter, Metadata, Record};
+use env_logger::Env;
+use log::{debug, error, info, warn};
+use log::{Level, Metadata, Record};
 use rayon::prelude::*;
 use sha2::{Digest, Sha256};
 use std::fs::{self, File};
@@ -32,7 +33,7 @@ struct ConsoleLogger;
 
 impl log::Log for ConsoleLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.level() <= Level::Info
+        metadata.level() <= Level::Trace
     }
 
     fn log(&self, record: &Record) {
@@ -100,8 +101,10 @@ fn is_empty_hash(hash: &str) -> bool {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize logger
+    env_logger::Builder::from_env(Env::default().default_filter_or(Level::Info.as_str()))
+        .format_timestamp(None)
+        .init();
     let _ = log::set_logger(&CONSOLE_LOGGER);
-    log::set_max_level(LevelFilter::Info);
 
     // Parse command line arguments
     let args = Cli::parse();
@@ -187,25 +190,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .collect();
 
     // Find duplicates
-    println!("Check for duplicates");
+    debug!("Check for duplicates");
     let root_hashes: Vec<String> = root_pairs.into_par_iter().map(|p| p.0).collect();
     let mut duplicate_pairs: Vec<(String, String)> = reference_pairs
         .into_par_iter()
         .filter(|pair| root_hashes.contains(&pair.0))
         .collect();
-    duplicate_pairs.sort_by(|a, b| a.1.cmp(&b.1));  
+    duplicate_pairs.sort_by(|a, b| a.1.cmp(&b.1));
 
     if duplicate_pairs.len() == 0 {
-        println!("No duplicates found")
+        info!("No duplicates found");
+        return Ok(());
     }
 
-    duplicate_pairs
-        .into_par_iter()
-        .for_each(|s| println!("{}", s.1));
-
     if !args.dry_run {
-        info!("Removing files...");
-        todo!("Removing files...");
+        duplicate_pairs
+            .par_iter()
+            .for_each(|pair| match fs::remove_file(&pair.1) {
+                Ok(()) => info!("Removed file {}", pair.1),
+                Err(err) => error!("Removing file {} failed: {}", pair.1, err),
+            });
+    } else {
+        duplicate_pairs
+            .into_par_iter()
+            .for_each(|s| info!("Found {}", s.1));
     }
 
     Ok(())
