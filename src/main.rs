@@ -186,10 +186,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Find duplicates
     println!("Check for duplicates");
-    let reference_hashes: Vec<String> = reference_pairs.into_iter().map(|p| p.0).collect();
-    let duplicate_pairs: Vec<(String, String)> = root_pairs
+    let root_hashes: Vec<String> = root_pairs.into_iter().map(|p| p.0).collect();
+    let duplicate_pairs: Vec<(String, String)> = reference_pairs
         .into_iter()
-        .filter(|pair| reference_hashes.contains(&pair.0))
+        .filter(|pair| root_hashes.contains(&pair.0))
         .collect();
 
     if duplicate_pairs.len() == 0 {
