@@ -201,7 +201,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     duplicate_pairs
         .into_par_iter()
-        .for_each(|s| println!("{} {}", s.0, s.1));
+        .for_each(|s| println!("{}", s.1));
 
     if !args.dry_run {
         info!("Removing files...");
