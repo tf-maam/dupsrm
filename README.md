@@ -5,6 +5,23 @@
 Command line tool to remove duplicated files.
 It recurses a reference and a root directory, finds file duplicates from the reference directory tree in the root directory tree and removes them.
 
+## Usage
+
+Remove duplicated files in the reference directory that are found in the root directory tree
+
+```bash
+Usage: dupsrm [OPTIONS] <REFERENCE_DIR> <ROOT_DIR>
+
+Arguments:
+  <REFERENCE_DIR>  Reference directory path
+  <ROOT_DIR>       Root directory path
+
+Options:
+  -d, --dry-run  Perform a dry-run without removing any file
+  -h, --help     Print help
+  -V, --version  Print version
+```
+
 ## TODOs
 
 - [x] Recursively iterate root and reference directories
