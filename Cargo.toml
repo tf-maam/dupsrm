@@ -5,8 +5,8 @@ version = "0.1.0"
 edition = "2021"
 description = "Recurse a reference and a root directory, find file duplicates from the reference directory tree in the root directory tree and remove them."
 readme = "README.md"
-license = "GPL-3.0"
-license-file = "LICENSE.txt"
+license = "GPL-3.0-or-later"
+# license-file = "LICENSE.txt"
 keywords = ["files", "duplicates"]
 
 
