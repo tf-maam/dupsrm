@@ -1,19 +1,18 @@
 #[cfg(test)]
 mod tests {
-    
+
     // use super::sha256sum
-    use serial_test::serial;
     use dupsrm::hasher::sha256sum;
+    use serial_test::serial;
 
     use assert_cmd::prelude::*; // Add methods on commands
     use predicates::prelude::*;
-    use std::process::Command; // Used for writing assertions
     use std::fs;
+    use std::process::Command; // Used for writing assertions
     use std::{
         io::Write,
         path::{Path, PathBuf},
     };
-
 
     pub struct CliTestCase {
         pub root_dir_path: PathBuf,
@@ -34,7 +33,9 @@ mod tests {
             let reference_dir_path = PathBuf::from("./test/test_reference/");
             fs::create_dir(&reference_dir_path).unwrap_or(());
             let k = 6;
-            let file_path_1: PathBuf = reference_dir_path.clone().join(format!("file_test_{}.txt", k));
+            let file_path_1: PathBuf = reference_dir_path
+                .clone()
+                .join(format!("file_test_{}.txt", k));
             let k = 9;
             let file_path_2: PathBuf = reference_dir_path.join(format!("file_test_{}.txt", k));
 
@@ -152,7 +153,8 @@ mod tests {
             Err(err) => panic!("{}", err),
             Ok(cmd) => cmd,
         };
-        cmd.arg(&test_case.reference_dir_path).arg(&test_case.root_dir_path);
+        cmd.arg(&test_case.reference_dir_path)
+            .arg(&test_case.root_dir_path);
         cmd.assert().success();
 
         // Check results
@@ -170,6 +172,18 @@ mod tests {
         cmd.assert()
             .failure()
             .stderr(predicate::str::contains("No such file or directory"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn same_reference_and_root() -> Result<(), Box<dyn std::error::Error>> {
+        let mut cmd = Command::cargo_bin("dupsrm")?;
+
+        cmd.arg("./").arg(".");
+        cmd.assert().failure().stderr(predicate::str::contains(
+            "Reference directory must not be identical to root directory",
+        ));
 
         Ok(())
     }
