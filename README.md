@@ -22,6 +22,13 @@ Options:
   -V, --version  Print version
 ```
 
+## Installation
+
+```bash
+cargo build --release
+cargo install --path .
+```
+
 ## TODOs
 
 - [x] Recursively iterate root and reference directories
