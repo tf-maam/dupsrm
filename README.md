@@ -30,6 +30,23 @@ cargo build --release
 cargo install --path .
 ```
 
+## Profiling
+
+```bash
+rm default_* 
+rm dupsrm.profdata
+cargo clean
+# profile execution
+RUSTFLAGS="-C instrument-coverage" cargo build
+target/debug/dupsrm test/ .
+# or profile tests
+RUSTFLAGS="-C instrument-coverage" cargo test --tests
+
+llvm-profdata merge -sparse default_*.profraw -o dupsrm.profdata
+llvm-cov report --use-color --ignore-filename-regex='/.cargo/registry' --instr-profile=dupsrm.profdata --object target/debug/dupsrm
+llvm-cov show --use-color --ignore-filename-regex='/.cargo/registry' --instr-profile=dupsrm.profdata --object target/debug/dupsrm
+```
+
 ## TODOs
 
 - [x] Recursively iterate root and reference directories
