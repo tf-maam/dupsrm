@@ -1,6 +1,6 @@
 // Remove duplicated files found in a reference directory in a directory
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2024  Manuel Amersdorfer
+// Copyright (Ctests::) 2024  Manuel Amersdorfer
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,89 +15,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use clap::{ArgAction, Parser};
-use data_encoding::HEXLOWER;
+use dupsrm::hasher::{sha256sum, is_empty_hash};
+use dupsrm::logger::CONSOLE_LOGGER;
+use dupsrm::cli::Cli;
+use dupsrm::path::{is_file, is_subdirectory};
 use env_logger::Env;
 use log::{debug, error, info, warn};
-use log::{Level, Metadata, Record};
+use log::Level;
 use rayon::prelude::*;
-use sha2::{Digest, Sha256};
-use std::fs::{self, File};
-use std::io::{self, BufReader, Read};
-use std::path::{Path, PathBuf};
+use std::fs;
+use std::path::Path;
 use walkdir::{DirEntry, WalkDir};
-
-static CONSOLE_LOGGER: ConsoleLogger = ConsoleLogger;
-
-struct ConsoleLogger;
-
-impl log::Log for ConsoleLogger {
-    fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.level() <= Level::Trace
-    }
-
-    fn log(&self, record: &Record) {
-        if self.enabled(record.metadata()) {
-            println!("{}: {}", record.level(), record.args());
-        }
-    }
-
-    fn flush(&self) {}
-}
-
-/// Remove duplicated files in the reference directory that are found in the root directory tree.
-#[derive(Parser)]
-#[clap(author = "Manuel Amersdorfer", version)]
-struct Cli {
-    /// Reference directory path
-    reference_dir: PathBuf,
-    /// Root directory path
-    root_dir: PathBuf,
-    /// Perform a dry-run without removing any file
-    #[clap(long, short, action(ArgAction::SetTrue))]
-    dry_run: bool,
-}
-
-/// Hash a file and return its sha256 hash value
-fn sha256sum(path: &Path) -> Result<String, io::Error> {
-    let file = match File::open(&path) {
-        Err(err) => return Err(err),
-        Ok(file) => file,
-    };
-
-    let mut reader = BufReader::new(file);
-    let digest = {
-        let mut hasher = Sha256::new();
-        let mut buffer = [0; 4098];
-        loop {
-            let count = reader.read(&mut buffer)?;
-            if count == 0 {
-                break;
-            }
-            hasher.update(&buffer[..count]);
-        }
-        hasher.finalize()
-    };
-    Ok(HEXLOWER.encode(digest.as_ref()))
-}
-
-/// Check if the path is a subdirectory of the reference path
-fn is_subdirectory(entry: &PathBuf, reference: &PathBuf) -> bool {
-    entry
-        .to_str()
-        .unwrap()
-        .starts_with(reference.to_str().unwrap())
-}
-
-/// Check if directory entry is a file
-fn is_file(entry: &DirEntry) -> bool {
-    entry.file_type().is_file()
-}
-
-/// Checks if the string equals the empty hash
-fn is_empty_hash(hash: &str) -> bool {
-    hash.eq("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
-}
+use clap::Parser;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize logger
@@ -217,179 +146,4 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use serial_test::serial;
-
-    use assert_cmd::prelude::*; // Add methods on commands
-    use predicates::prelude::*;
-    use std::process::Command; // Used for writing assertions
-    use std::fs;
-    use std::{
-        io::Write,
-        path::{Path, PathBuf},
-    };
-
-
-    pub struct CliTestCase {
-        pub root_dir_path: PathBuf,
-        pub reference_dir_path: PathBuf,
-        pub file_path_1: PathBuf,
-        pub file_path_2: PathBuf,
-    }
-
-    trait CliTest {
-        fn new() -> Self;
-        fn startup(&self);
-        fn teardown(&self);
-    }
-
-    impl CliTest for CliTestCase {
-        fn new() -> Self {
-            let root_dir_path = PathBuf::from("./test/test_root/");
-            let reference_dir_path = PathBuf::from("./test/test_reference/");
-            fs::create_dir(&reference_dir_path).unwrap_or(());
-            let k = 6;
-            let file_path_1: PathBuf = reference_dir_path.clone().join(format!("file_test_{}.txt", k));
-            let k = 9;
-            let file_path_2: PathBuf = reference_dir_path.join(format!("file_test_{}.txt", k));
-
-            CliTestCase {
-                root_dir_path: root_dir_path,
-                reference_dir_path: reference_dir_path,
-                file_path_1: file_path_1,
-                file_path_2: file_path_2,
-            }
-        }
-
-        fn startup(&self) {
-            // Create file structure
-            fs::create_dir(&self.root_dir_path).unwrap_or(());
-            for i in 0..10 {
-                let dir_path: PathBuf = self.root_dir_path.join(format!("dir_{}/", i)).to_owned();
-                fs::create_dir(&dir_path).unwrap_or(());
-                for j in 0..10 {
-                    let file_path: PathBuf = dir_path.join(format!("file_{}.txt", j));
-                    let mut file = fs::File::create(&file_path).unwrap();
-                    let _ = file.write_all(format!("test {} {}", i, j).as_bytes());
-                }
-            }
-            fs::create_dir(&self.reference_dir_path).unwrap_or(());
-            let i = 5;
-            let j = 2;
-            let mut file = fs::File::create(&self.file_path_1).unwrap();
-            let _ = file.write_all(format!("test {} {}", i, j).as_bytes());
-            let i = 50;
-            let j = 200;
-            let mut file = fs::File::create(&self.file_path_2).unwrap();
-            let _ = file.write_all(format!("test {} {}", i, j).as_bytes());
-        }
-
-        fn teardown(&self) {
-            // Cleanup
-            std::fs::remove_dir_all(&self.root_dir_path).unwrap_or(());
-            std::fs::remove_dir_all(&self.reference_dir_path).unwrap_or(());
-            assert!(!self.root_dir_path.exists());
-            assert!(!self.reference_dir_path.exists());
-        }
-    }
-
-    #[test]
-    fn empty_file_exists() {
-        let path: &str = "test/test_empty.txt";
-        let result = sha256sum(Path::new(path)).unwrap();
-        assert_eq!(
-            result,
-            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        );
-    }
-
-    #[test]
-    fn file_exists() {
-        let path: &str = "test/test.txt";
-        let result = sha256sum(Path::new(path)).unwrap();
-        assert_eq!(
-            result,
-            "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-        );
-    }
-
-    #[test]
-    fn file_does_not_exists() {
-        let path: &str = "test/test2.txt";
-        let result = sha256sum(Path::new(path));
-        assert!(result.is_err());
-    }
-
-    #[test]
-    // #[ignore]
-    #[serial]
-    fn dry_run() {
-        let test_case = CliTestCase::new();
-        test_case.startup();
-
-        // Check prerequisites
-        assert!(test_case.file_path_1.exists());
-        assert!(test_case.file_path_2.exists());
-        assert!(test_case.root_dir_path.exists());
-        assert!(test_case.reference_dir_path.exists());
-
-        // Execute program
-        let mut cmd = match Command::cargo_bin("dupsrm") {
-            Err(err) => panic!("{}", err),
-            Ok(cmd) => cmd,
-        };
-        cmd.arg(&test_case.reference_dir_path)
-            .arg(&test_case.root_dir_path)
-            .arg("-d");
-        cmd.assert().success();
-
-        // Check results
-        assert!(test_case.file_path_1.exists());
-        assert!(test_case.file_path_2.exists());
-
-        test_case.teardown();
-    }
-
-    #[test]
-    #[serial]
-    fn duplicates_removed() {
-        let test_case = CliTestCase::new();
-        test_case.startup();
-
-        // Check prerequisites
-        assert!(test_case.file_path_1.exists());
-        assert!(test_case.file_path_2.exists());
-        assert!(test_case.root_dir_path.exists());
-        assert!(test_case.reference_dir_path.exists());
-
-        // Execute program
-        let mut cmd = match Command::cargo_bin("dupsrm") {
-            Err(err) => panic!("{}", err),
-            Ok(cmd) => cmd,
-        };
-        cmd.arg(&test_case.reference_dir_path).arg(&test_case.root_dir_path);
-        cmd.assert().success();
-
-        // Check results
-        assert!(!test_case.file_path_1.exists());
-        assert!(test_case.file_path_2.exists());
-
-        test_case.teardown();
-    }
-
-    #[test]
-    fn file_doesnt_exist() -> Result<(), Box<dyn std::error::Error>> {
-        let mut cmd = Command::cargo_bin("dupsrm")?;
-
-        cmd.arg("./dsdfgdf").arg(".");
-        cmd.assert()
-            .failure()
-            .stderr(predicate::str::contains("No such file or directory"));
-
-        Ok(())
-    }
 }
