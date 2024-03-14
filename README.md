@@ -33,7 +33,7 @@ Options:
 - [x] Add the method to remove files
 - [x] Add the command line flags `-n, --dry-run` to don't remove files as in `git rm`
 - [ ] Modularize source code into different files
-- [ ] Add additional unit tests with an example file structure
+- [x] Add additional unit tests with an example file structure
 - [ ] Create a docker container for running build tests
 - [x] Create Github and Gitlab CI
 - [ ] Modularize the hash function to allow the usage of other hash algorithms
@@ -43,3 +43,5 @@ Options:
 - [ ] Extend logger output
 - [ ] Use a hashmap to find duplicated hashes decreasing the computational complexity
 - [ ] Add a filter for file types or regex support
+- [ ] Use `PathBuf` instead of `String`
+- [ ] Wrap hash type with `&str`
