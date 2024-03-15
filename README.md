@@ -18,9 +18,11 @@ Arguments:
   <ROOT_DIR>       Root directory path
 
 Options:
-  -d, --dry-run  Perform a dry-run without removing any file
-  -h, --help     Print help
-  -V, --version  Print version
+  -d, --dry-run        Perform a dry-run without removing any file
+  -r, --regex <REGEX>  Regular expression filtering files in reference directories
+  -h, --help           Print help
+  -V, --version        Print version
+
 ```
 
 ## Installation
@@ -67,7 +69,8 @@ llvm-cov show --use-color --ignore-filename-regex='/.cargo/registry' --instr-pro
 - [ ] Write documentation with usage examples
 - [ ] Extend logger output
 - [ ] Use a hashmap to find duplicated hashes decreasing the computational complexity
-- [ ] Add a filter for file types or regex support
+- [x] Add a filter for file types or regex support
 - [ ] Use `PathBuf` instead of `String` for paths
 - [ ] Wrap hash type with `&str` or fixed size type
 - [ ] Add a flag to not recurse the reference directory or set a maximum depth
+- [ ] Provide usage examples with regular expression

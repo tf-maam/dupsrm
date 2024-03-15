@@ -25,6 +25,7 @@ use env_logger::Env;
 use log::Level;
 use log::{debug, error, info, warn};
 use rayon::prelude::*;
+use regex::Regex;
 use std::fs;
 use std::path::Path;
 use walkdir::{DirEntry, WalkDir};
@@ -75,6 +76,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ));
     }
 
+    match &args.regex {
+        Some(str) => info!("regex: \'{}\'", str),
+        None => info!("regex: \"\""),
+    }
+
+    let regex: Option<Regex> = match args.regex {
+        Some(re_str) => Some(Regex::new(re_str.as_str()).unwrap()),
+        None => None,
+    };
+
     // Calculate list of hashes for the root directory tree
     let root_dirs: Vec<DirEntry> = WalkDir::new(root_dir.clone())
         .into_iter()
@@ -107,6 +118,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let reference_files: Vec<DirEntry> = reference_dirs
         .into_par_iter()
         .filter(|e| is_file(e))
+        .collect();
+
+    let reference_files: Vec<DirEntry> = reference_files
+        .into_par_iter()
+        .filter(|path| match &regex {
+            Some(re) => re.is_match(path.path().to_str().unwrap_or("")),
+            None => true,
+        })
         .collect();
 
     let reference_pairs: Vec<(String, String)> = reference_files

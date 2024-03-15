@@ -187,4 +187,35 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    #[serial]
+    fn match_regex() {
+
+        let test_case = CliTestCase::new();
+        test_case.startup();
+
+        // Check prerequisites
+        assert!(test_case.file_path_1.exists());
+        assert!(test_case.file_path_2.exists());
+        assert!(test_case.root_dir_path.exists());
+        assert!(test_case.reference_dir_path.exists());
+
+        // Execute program
+        let mut cmd = match Command::cargo_bin("dupsrm") {
+            Err(err) => panic!("{}", err),
+            Ok(cmd) => cmd,
+        };
+        cmd.arg(&test_case.reference_dir_path)
+            .arg(&test_case.root_dir_path)
+            .arg("-r")
+            .arg("(6.txt)$");
+        cmd.assert().success();
+
+        // Check results
+        assert!(!test_case.file_path_1.exists());
+        assert!(test_case.file_path_2.exists());
+
+        test_case.teardown();
+    }
 }

@@ -12,4 +12,7 @@ pub struct Cli {
     /// Perform a dry-run without removing any file
     #[clap(long, short, action(ArgAction::SetTrue))]
     pub dry_run: bool,
+    /// Regular expression filtering files in reference directories
+    #[clap(long, short)]
+    pub regex: Option<String>,
 }
