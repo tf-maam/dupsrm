@@ -68,5 +68,6 @@ llvm-cov show --use-color --ignore-filename-regex='/.cargo/registry' --instr-pro
 - [ ] Extend logger output
 - [ ] Use a hashmap to find duplicated hashes decreasing the computational complexity
 - [ ] Add a filter for file types or regex support
-- [ ] Use `PathBuf` instead of `String`
-- [ ] Wrap hash type with `&str`
+- [ ] Use `PathBuf` instead of `String` for paths
+- [ ] Wrap hash type with `&str` or fixed size type
+- [ ] Add a flag to not recurse the reference directory or set a maximum depth
