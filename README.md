@@ -1,5 +1,6 @@
 # dupsrm
 
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Rust](https://github.com/tf-maam/dupsrm/actions/workflows/rust.yml/badge.svg)](https://github.com/tf-maam/dupsrm/actions/workflows/rust.yml)
 
 Command line tool to remove duplicated files.
@@ -17,9 +18,35 @@ Arguments:
   <ROOT_DIR>       Root directory path
 
 Options:
-  -d, --dry-run  Perform a dry-run without removing any file
-  -h, --help     Print help
-  -V, --version  Print version
+  -d, --dry-run        Perform a dry-run without removing any file
+  -r, --regex <REGEX>  Regular expression filtering files in reference directories
+  -h, --help           Print help
+  -V, --version        Print version
+
+```
+
+## Installation
+
+```bash
+cargo build --release
+cargo install --path .
+```
+
+## Profiling
+
+```bash
+rm default_* 
+rm dupsrm.profdata
+cargo clean
+# profile execution
+RUSTFLAGS="-C instrument-coverage" cargo build
+target/debug/dupsrm test/ .
+# or profile tests
+RUSTFLAGS="-C instrument-coverage" cargo test --tests
+
+llvm-profdata merge -sparse default_*.profraw -o dupsrm.profdata
+llvm-cov report --use-color --ignore-filename-regex='/.cargo/registry' --instr-profile=dupsrm.profdata --object target/debug/dupsrm
+llvm-cov show --use-color --ignore-filename-regex='/.cargo/registry' --instr-profile=dupsrm.profdata --object target/debug/dupsrm
 ```
 
 ## TODOs
@@ -42,6 +69,8 @@ Options:
 - [ ] Write documentation with usage examples
 - [ ] Extend logger output
 - [ ] Use a hashmap to find duplicated hashes decreasing the computational complexity
-- [ ] Add a filter for file types or regex support
-- [ ] Use `PathBuf` instead of `String`
-- [ ] Wrap hash type with `&str`
+- [x] Add a filter for file types or regex support
+- [ ] Use `PathBuf` instead of `String` for paths
+- [ ] Wrap hash type with `&str` or fixed size type
+- [ ] Add a flag to not recurse the reference directory or set a maximum depth
+- [ ] Provide usage examples with regular expression

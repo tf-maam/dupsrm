@@ -15,18 +15,20 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use dupsrm::hasher::{sha256sum, is_empty_hash};
-use dupsrm::logger::CONSOLE_LOGGER;
+use clap::Parser;
 use dupsrm::cli::Cli;
+use dupsrm::error::ArgumentError;
+use dupsrm::hasher::{is_empty_hash, sha256sum};
+use dupsrm::logger::CONSOLE_LOGGER;
 use dupsrm::path::{is_file, is_subdirectory};
 use env_logger::Env;
-use log::{debug, error, info, warn};
 use log::Level;
+use log::{debug, error, info, warn};
 use rayon::prelude::*;
+use regex::Regex;
 use std::fs;
 use std::path::Path;
 use walkdir::{DirEntry, WalkDir};
-use clap::Parser;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize logger
@@ -67,6 +69,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             reference_dir.to_str().unwrap()
         );
     }
+    if reference_dir.eq(&root_dir) {
+        error!("Reference directory must not be identical to root directory");
+        return Err(ArgumentError::new(
+            "Reference directory must not be identical to root directory",
+        ));
+    }
+
+    match &args.regex {
+        Some(str) => info!("regex: \'{}\'", str),
+        None => info!("regex: \"\""),
+    }
+
+    let regex: Option<Regex> = match args.regex {
+        Some(re_str) => Some(Regex::new(re_str.as_str()).unwrap()),
+        None => None,
+    };
 
     // Calculate list of hashes for the root directory tree
     let root_dirs: Vec<DirEntry> = WalkDir::new(root_dir.clone())
@@ -100,6 +118,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let reference_files: Vec<DirEntry> = reference_dirs
         .into_par_iter()
         .filter(|e| is_file(e))
+        .collect();
+
+    let reference_files: Vec<DirEntry> = reference_files
+        .into_par_iter()
+        .filter(|path| match &regex {
+            Some(re) => re.is_match(path.path().to_str().unwrap_or("")),
+            None => true,
+        })
         .collect();
 
     let reference_pairs: Vec<(String, String)> = reference_files
