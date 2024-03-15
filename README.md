@@ -62,12 +62,20 @@ llvm-cov show --use-color --ignore-filename-regex='/.cargo/registry' --instr-pro
     Use [clap](https://docs.rs/clap/latest/clap/) for command line argument parsing
 - [x] Add the method to remove files
 - [x] Add the command line flags `-n, --dry-run` to don't remove files as in `git rm`
-- [ ] Modularize source code into different files
+- [x] Modularize source code into different files
 - [x] Add additional unit tests with an example file structure
 - [ ] Create a docker container for running build tests
 - [x] Create Github and Gitlab CI
 - [ ] Modularize the hash function to allow the usage of other hash algorithms
-- [ ] Benchmark implementation
+  - [SHA-3](https://docs.rs/sha3/latest/sha3/)
+  - [SHA-2](https://docs.rs/sha1/latest/sha1/)
+  - [SHA-1](https://docs.rs/sha2/latest/sha2/)
+  - [MD5](https://docs.rs/md5/latest/md5/)
+  - [Whirlpool](https://docs.rs/whirlpool/latest/whirlpool/)
+  - [BLAKE](https://docs.rs/blake/latest/blake/)
+  - [RIPEMD](https://docs.rs/ripemd/latest/ripemd/)
+  - [Tiger](https://docs.rs/tiger/latest/tiger/)
+- [ ] Benchmark implementation using [cargo-bench](https://doc.rust-lang.org/cargo/commands/cargo-bench.html)
 - [x] Parallelize iterators and hashing of files in multiple threads
 - [ ] Write documentation with usage examples
 - [ ] Extend logger output
