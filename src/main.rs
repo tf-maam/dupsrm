@@ -30,7 +30,7 @@ use log::{debug, error, info, warn};
 use rayon::prelude::*;
 use regex::Regex;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -108,17 +108,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .collect();
     let root_files: Vec<DirEntry> = root_dirs.into_par_iter().filter(is_file).collect();
 
-    let root_pairs: Vec<(String, String)> = root_files
+    let root_pairs: Vec<(String, PathBuf)> = root_files
         .into_par_iter()
         .map(|e| {
             (
                 hash_sum(e.path()).unwrap_or(String::new()),
-                (fs::canonicalize(e.path().to_str().unwrap_or(""))
-                    .unwrap()
-                    .to_str()
-                    .to_owned())
-                .unwrap()
-                .to_string(),
+                fs::canonicalize(e.path()).unwrap(),
             )
         })
         .filter(|pair| !is_empty_hash(pair.0.as_str(), &args.hash_algorithm))
@@ -139,17 +134,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .collect();
 
-    let reference_pairs: Vec<(String, String)> = reference_files
+    let reference_pairs: Vec<(String, PathBuf)> = reference_files
         .into_par_iter()
         .map(|e| {
             (
                 hash_sum(e.path()).unwrap_or(String::new()),
-                (fs::canonicalize(e.path().to_str().unwrap_or(""))
-                    .unwrap()
-                    .to_str()
-                    .to_owned())
-                .unwrap()
-                .to_string(),
+                fs::canonicalize(e.path()).unwrap(),
             )
         })
         .filter(|pair| !is_empty_hash(pair.0.as_str(), &args.hash_algorithm))
@@ -158,7 +148,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Find duplicates
     debug!("Check for duplicates");
     let root_hashes: Vec<String> = root_pairs.into_par_iter().map(|p| p.0).collect();
-    let mut duplicate_pairs: Vec<(String, String)> = reference_pairs
+    let mut duplicate_pairs: Vec<(String, PathBuf)> = reference_pairs
         .into_par_iter()
         .filter(|pair| root_hashes.contains(&pair.0))
         .collect();
@@ -173,13 +163,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         duplicate_pairs
             .par_iter()
             .for_each(|pair| match fs::remove_file(&pair.1) {
-                Ok(()) => info!("Removed file {}", pair.1),
-                Err(err) => error!("Removing file {} failed: {}", pair.1, err),
+                Ok(()) => info!("Removed file {}", pair.1.to_str().unwrap()),
+                Err(err) => error!("Removing file {} failed: {}", pair.1.to_str().unwrap(), err),
             });
     } else {
         duplicate_pairs
             .into_par_iter()
-            .for_each(|s| info!("Found {}", s.1));
+            .for_each(|s| info!("Found {}", s.1.to_str().unwrap()));
     }
 
     Ok(())
