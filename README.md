@@ -80,7 +80,7 @@ llvm-cov show --use-color --ignore-filename-regex='/.cargo/registry' --instr-pro
   - [BLAKE](https://docs.rs/blake/latest/blake/)
   - [RIPEMD](https://docs.rs/ripemd/latest/ripemd/)
   - [Tiger](https://docs.rs/tiger/latest/tiger/)
-- [ ] Benchmark implementation using [cargo-bench](https://doc.rust-lang.org/cargo/commands/cargo-bench.html)
+- [x] Benchmark implementation using [cargo-bench](https://doc.rust-lang.org/cargo/commands/cargo-bench.html)
 - [x] Parallelize iterators and hashing of files in multiple threads
 - [ ] Write documentation with usage examples
 - [ ] Extend logger output
