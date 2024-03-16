@@ -108,15 +108,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .collect();
     let root_files: Vec<DirEntry> = root_dirs.into_par_iter().filter(is_file).collect();
 
-    let root_pairs: Vec<(String, PathBuf)> = root_files
+    let root_pairs: Vec<(Vec<u8>, PathBuf)> = root_files
         .into_par_iter()
         .map(|e| {
             (
-                hash_sum(e.path()).unwrap_or(String::new()),
+                hash_sum(e.path()).unwrap(),
                 fs::canonicalize(e.path()).unwrap(),
             )
         })
-        .filter(|pair| !is_empty_hash(pair.0.as_str(), &args.hash_algorithm))
+        .filter(|pair| !is_empty_hash(&pair.0, &args.hash_algorithm))
         .collect();
 
     // Calculate list of hashes for the reference directory tree
@@ -134,21 +134,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .collect();
 
-    let reference_pairs: Vec<(String, PathBuf)> = reference_files
+    let reference_pairs: Vec<(Vec<u8>, PathBuf)> = reference_files
         .into_par_iter()
         .map(|e| {
             (
-                hash_sum(e.path()).unwrap_or(String::new()),
+                hash_sum(e.path()).unwrap(),
                 fs::canonicalize(e.path()).unwrap(),
             )
         })
-        .filter(|pair| !is_empty_hash(pair.0.as_str(), &args.hash_algorithm))
+        .filter(|pair| !is_empty_hash(&pair.0, &args.hash_algorithm))
         .collect();
 
     // Find duplicates
     debug!("Check for duplicates");
-    let root_hashes: Vec<String> = root_pairs.into_par_iter().map(|p| p.0).collect();
-    let mut duplicate_pairs: Vec<(String, PathBuf)> = reference_pairs
+    let root_hashes: Vec<Vec<u8>> = root_pairs.into_par_iter().map(|p| p.0).collect();
+    let mut duplicate_pairs: Vec<(Vec<u8>, PathBuf)> = reference_pairs
         .into_par_iter()
         .filter(|pair| root_hashes.contains(&pair.0))
         .collect();
