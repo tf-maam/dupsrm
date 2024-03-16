@@ -28,6 +28,11 @@ Options:
 
 ```
 
+Usecases
+- Removing outdated backups
+- Cleaning `Downloads` folder from copied and possibly renamed files
+- Save disk space
+
 ## Installation
 
 ```bash
@@ -77,3 +82,4 @@ llvm-cov show --use-color --ignore-filename-regex='/.cargo/registry' --instr-pro
 - [ ] Wrap hash type with `&str` or fixed size type
 - [ ] Add a flag to not recurse the reference directory or set a maximum depth
 - [ ] Provide usage examples with regular expression
+- [] Add option to create symlinks or hard links to original files, replacing the removed files in the reference directory
