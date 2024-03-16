@@ -2,18 +2,21 @@
 mod tests {
 
     // use super::sha256sum
-    use dupsrm::hasher::{blake256_sum, is_empty_hash, md5sum, ripemd160_sum, sha1sum, sha256sum, sha3_256sum, whirlpool_sum, HashAlgorithm};
+    use dupsrm::hasher::{
+        blake256_sum, is_empty_hash, md5sum, ripemd160_sum, sha1sum, sha256sum, sha3_256sum,
+        whirlpool_sum, HashAlgorithm,
+    };
     use serial_test::serial;
 
     use assert_cmd::prelude::*; // Add methods on commands
     use predicates::prelude::*;
+    use rstest::rstest;
     use std::fs;
     use std::process::Command; // Used for writing assertions
     use std::{
         io::Write,
         path::{Path, PathBuf},
     };
-    use rstest::rstest;
 
     pub struct CliTestCase {
         pub root_dir_path: PathBuf,
@@ -193,7 +196,6 @@ mod tests {
     #[test]
     #[serial]
     fn match_regex() {
-
         let test_case = CliTestCase::new();
         test_case.startup();
 
@@ -265,9 +267,6 @@ mod tests {
         test_case.teardown();
     }
 
-
-
-    
     #[rstest]
     #[case::sha2_256(HashAlgorithm::SHA2_256)]
     #[case::sha3_256(HashAlgorithm::SHA3_256)]
@@ -276,7 +275,7 @@ mod tests {
     #[case::whirlpool(HashAlgorithm::WHIRLPOOL)]
     #[case::ripemd160(HashAlgorithm::RIPEMD160)]
     #[case::blake256(HashAlgorithm::BLAKE256)]
-    fn hash_algorithms_empty(#[case] algorithm : HashAlgorithm){
+    fn hash_algorithms_empty(#[case] algorithm: HashAlgorithm) {
         let path: &Path = Path::new("test/test_empty.txt");
         let result = match algorithm {
             HashAlgorithm::SHA2_256 => sha256sum(path),

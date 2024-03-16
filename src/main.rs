@@ -85,10 +85,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         None => info!("regex: \"\""),
     }
 
-    let regex: Option<Regex> = match args.regex {
-        Some(re_str) => Some(Regex::new(re_str.as_str()).unwrap()),
-        None => None,
-    };
+    let regex: Option<Regex> = args
+        .regex
+        .map(|re_str| Regex::new(re_str.as_str()).unwrap());
 
     // Choose hash function
     let hash_sum = match args.hash_algorithm {
@@ -107,7 +106,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .filter_entry(|e| !is_subdirectory(&e.clone().into_path(), &reference_dir))
         .filter_map(|v| v.ok())
         .collect();
-    let root_files: Vec<DirEntry> = root_dirs.into_par_iter().filter(|e| is_file(e)).collect();
+    let root_files: Vec<DirEntry> = root_dirs.into_par_iter().filter(is_file).collect();
 
     let root_pairs: Vec<(String, String)> = root_files
         .into_par_iter()
@@ -130,10 +129,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .into_iter()
         .filter_map(|v| v.ok())
         .collect();
-    let reference_files: Vec<DirEntry> = reference_dirs
-        .into_par_iter()
-        .filter(|e| is_file(e))
-        .collect();
+    let reference_files: Vec<DirEntry> = reference_dirs.into_par_iter().filter(is_file).collect();
 
     let reference_files: Vec<DirEntry> = reference_files
         .into_par_iter()
@@ -168,7 +164,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .collect();
     duplicate_pairs.sort_by(|a, b| a.1.cmp(&b.1));
 
-    if duplicate_pairs.len() == 0 {
+    if duplicate_pairs.is_empty() {
         info!("No duplicates found");
         return Ok(());
     }

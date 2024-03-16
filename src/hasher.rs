@@ -1,32 +1,30 @@
-
+use blake::{self, Blake};
 use data_encoding::HEXLOWER;
+use md5::{self, Md5};
+use ripemd::{self, Ripemd160};
+use sha1::{self, Sha1};
 use sha2::{Digest, Sha256};
+use sha3::{self, Sha3_256};
 use std::fs::File;
 use std::io::{self, BufReader, Read};
 use std::path::Path;
-use sha3::{self, Sha3_256};
-use sha1::{self, Sha1};
 use whirlpool::{self, Whirlpool};
-use blake::{self, Blake};
-use md5::{self, Md5};
-use ripemd::{self,Ripemd160};
 
 /// Enumerates the hash algorithm
 #[derive(Clone)]
 pub enum HashAlgorithm {
-    SHA2_256, //< SHA256
-    SHA3_256, //< SHA3-256
-    SHA1, //< SHA1
-    MD5, //< MD5
+    SHA2_256,  //< SHA256
+    SHA3_256,  //< SHA3-256
+    SHA1,      //< SHA1
+    MD5,       //< MD5
     WHIRLPOOL, //< Whirlpool
     RIPEMD160, //< RIPEMD-160
-    BLAKE256, //< BLAKE-256
+    BLAKE256,  //< BLAKE-256
 }
-
 
 /// Hash a file and return its sha256 hash value
 pub fn sha256sum(path: &Path) -> Result<String, io::Error> {
-    let file = match File::open(&path) {
+    let file = match File::open(path) {
         Err(err) => return Err(err),
         Ok(file) => file,
     };
@@ -50,7 +48,7 @@ pub fn sha256sum(path: &Path) -> Result<String, io::Error> {
 
 /// Hash a file and return its SHA3-256 hash value
 pub fn sha3_256sum(path: &Path) -> Result<String, io::Error> {
-    let file = match File::open(&path) {
+    let file = match File::open(path) {
         Err(err) => return Err(err),
         Ok(file) => file,
     };
@@ -74,7 +72,7 @@ pub fn sha3_256sum(path: &Path) -> Result<String, io::Error> {
 
 /// Hash a file and return its SHA1 hash value
 pub fn sha1sum(path: &Path) -> Result<String, io::Error> {
-    let file = match File::open(&path) {
+    let file = match File::open(path) {
         Err(err) => return Err(err),
         Ok(file) => file,
     };
@@ -98,7 +96,7 @@ pub fn sha1sum(path: &Path) -> Result<String, io::Error> {
 
 /// Hash a file and return its MD5 hash value
 pub fn md5sum(path: &Path) -> Result<String, io::Error> {
-    let file = match File::open(&path) {
+    let file = match File::open(path) {
         Err(err) => return Err(err),
         Ok(file) => file,
     };
@@ -122,7 +120,7 @@ pub fn md5sum(path: &Path) -> Result<String, io::Error> {
 
 /// Hash a file and return its Whirlpool hash value
 pub fn whirlpool_sum(path: &Path) -> Result<String, io::Error> {
-    let file = match File::open(&path) {
+    let file = match File::open(path) {
         Err(err) => return Err(err),
         Ok(file) => file,
     };
@@ -146,7 +144,7 @@ pub fn whirlpool_sum(path: &Path) -> Result<String, io::Error> {
 
 /// Hash a file and return its BLAKE-256 hash value
 pub fn blake256_sum(path: &Path) -> Result<String, io::Error> {
-    let file = match File::open(&path) {
+    let file = match File::open(path) {
         Err(err) => return Err(err),
         Ok(file) => file,
     };
@@ -170,7 +168,7 @@ pub fn blake256_sum(path: &Path) -> Result<String, io::Error> {
 
 /// Hash a file and return its RIPEMD-160 hash value
 pub fn ripemd160_sum(path: &Path) -> Result<String, io::Error> {
-    let file = match File::open(&path) {
+    let file = match File::open(path) {
         Err(err) => return Err(err),
         Ok(file) => file,
     };

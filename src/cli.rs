@@ -1,8 +1,7 @@
-pub use clap::{ArgAction, Parser, ValueEnum};
-use clap::builder::PossibleValue;
-use std::path::PathBuf;
 use super::hasher::HashAlgorithm;
-
+use clap::builder::PossibleValue;
+pub use clap::{ArgAction, Parser, ValueEnum};
+use std::path::PathBuf;
 
 impl ValueEnum for HashAlgorithm {
     fn value_variants<'a>() -> &'a [Self] {
@@ -39,12 +38,12 @@ pub struct Cli {
     /// Root directory path
     pub root_dir: PathBuf,
     /// Perform a dry-run without removing any file
-    #[clap(long, short='n', action(ArgAction::SetTrue))]
+    #[clap(long, short = 'n', action(ArgAction::SetTrue))]
     pub dry_run: bool,
     /// Regular expression filtering files in reference directories
     #[clap(long, short)]
     pub regex: Option<String>,
     /// Hash algorithm
-    #[clap(long, short='a', default_value="SHA2-256")]
+    #[clap(long, short = 'a', default_value = "SHA2-256")]
     pub hash_algorithm: HashAlgorithm,
 }

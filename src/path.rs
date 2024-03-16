@@ -1,9 +1,8 @@
-use std::path::PathBuf;
+use std::path::Path;
 use walkdir::DirEntry;
 
-
 /// Check if the path is a subdirectory of the reference path
-pub fn is_subdirectory(entry: &PathBuf, reference: &PathBuf) -> bool {
+pub fn is_subdirectory(entry: &Path, reference: &Path) -> bool {
     entry
         .to_str()
         .unwrap()

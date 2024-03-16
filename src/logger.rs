@@ -1,4 +1,3 @@
-
 use log::{Level, Metadata, Record};
 
 pub static CONSOLE_LOGGER: ConsoleLogger = ConsoleLogger;
