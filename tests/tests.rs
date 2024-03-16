@@ -2,7 +2,7 @@
 mod tests {
 
     // use super::sha256sum
-    use dupsrm::hasher::sha256sum;
+    use dupsrm::hasher::{blake256_sum, is_empty_hash, md5sum, ripemd160_sum, sha1sum, sha256sum, sha3_256sum, whirlpool_sum, HashAlgorithm};
     use serial_test::serial;
 
     use assert_cmd::prelude::*; // Add methods on commands
@@ -13,6 +13,7 @@ mod tests {
         io::Write,
         path::{Path, PathBuf},
     };
+    use rstest::rstest;
 
     pub struct CliTestCase {
         pub root_dir_path: PathBuf,
@@ -87,6 +88,7 @@ mod tests {
             result,
             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
         );
+        assert!(is_empty_hash(result.as_str(), &HashAlgorithm::SHA2_256));
     }
 
     #[test]
@@ -126,7 +128,7 @@ mod tests {
         };
         cmd.arg(&test_case.reference_dir_path)
             .arg(&test_case.root_dir_path)
-            .arg("-d");
+            .arg("-n");
         cmd.assert().success();
 
         // Check results
@@ -217,5 +219,74 @@ mod tests {
         assert!(test_case.file_path_2.exists());
 
         test_case.teardown();
+    }
+
+    #[rstest]
+    #[serial]
+    #[case::sha2_256("SHA2-256")]
+    #[serial]
+    #[case::sha3_256("SHA3-256")]
+    #[serial]
+    #[case::sha1("SHA1")]
+    #[serial]
+    #[case::md5("MD5")]
+    #[serial]
+    #[case::whirlpool("WHIRLPOOL")]
+    #[serial]
+    #[case::ripemd160("RIPEMD-160")]
+    #[serial]
+    #[case::blake256("BLAKE-256")]
+    #[serial]
+    fn hash_algorithms(#[case] alorithm: &str) {
+        let test_case = CliTestCase::new();
+        test_case.startup();
+
+        // Check prerequisites
+        assert!(test_case.file_path_1.exists());
+        assert!(test_case.file_path_2.exists());
+        assert!(test_case.root_dir_path.exists());
+        assert!(test_case.reference_dir_path.exists());
+
+        // Execute program
+        let mut cmd = match Command::cargo_bin("dupsrm") {
+            Err(err) => panic!("{}", err),
+            Ok(cmd) => cmd,
+        };
+        cmd.arg(&test_case.reference_dir_path)
+            .arg(&test_case.root_dir_path)
+            .arg("-a")
+            .arg(alorithm);
+        cmd.assert().success();
+
+        // Check results
+        assert!(!test_case.file_path_1.exists());
+        assert!(test_case.file_path_2.exists());
+
+        test_case.teardown();
+    }
+
+
+
+    
+    #[rstest]
+    #[case::sha2_256(HashAlgorithm::SHA2_256)]
+    #[case::sha3_256(HashAlgorithm::SHA3_256)]
+    #[case::sha1(HashAlgorithm::SHA1)]
+    #[case::md5(HashAlgorithm::MD5)]
+    #[case::whirlpool(HashAlgorithm::WHIRLPOOL)]
+    #[case::ripemd160(HashAlgorithm::RIPEMD160)]
+    #[case::blake256(HashAlgorithm::BLAKE256)]
+    fn hash_algorithms_empty(#[case] algorithm : HashAlgorithm){
+        let path: &Path = Path::new("test/test_empty.txt");
+        let result = match algorithm {
+            HashAlgorithm::SHA2_256 => sha256sum(path),
+            HashAlgorithm::SHA3_256 => sha3_256sum(path),
+            HashAlgorithm::SHA1 => sha1sum(path),
+            HashAlgorithm::MD5 => md5sum(path),
+            HashAlgorithm::WHIRLPOOL => whirlpool_sum(path),
+            HashAlgorithm::RIPEMD160 => ripemd160_sum(path),
+            HashAlgorithm::BLAKE256 => blake256_sum(path),
+        };
+        assert!(is_empty_hash(result.unwrap().as_str(), &algorithm));
     }
 }

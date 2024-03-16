@@ -18,7 +18,10 @@
 use clap::Parser;
 use dupsrm::cli::Cli;
 use dupsrm::error::ArgumentError;
-use dupsrm::hasher::{is_empty_hash, sha256sum};
+use dupsrm::hasher::{
+    blake256_sum, is_empty_hash, md5sum, ripemd160_sum, sha1sum, sha256sum, sha3_256sum,
+    whirlpool_sum, HashAlgorithm,
+};
 use dupsrm::logger::CONSOLE_LOGGER;
 use dupsrm::path::{is_file, is_subdirectory};
 use env_logger::Env;
@@ -76,6 +79,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ));
     }
 
+    // Formulate regex
     match &args.regex {
         Some(str) => info!("regex: \'{}\'", str),
         None => info!("regex: \"\""),
@@ -84,6 +88,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let regex: Option<Regex> = match args.regex {
         Some(re_str) => Some(Regex::new(re_str.as_str()).unwrap()),
         None => None,
+    };
+
+    // Choose hash function
+    let hash_sum = match args.hash_algorithm {
+        HashAlgorithm::SHA2_256 => |path: &Path| sha256sum(path),
+        HashAlgorithm::SHA3_256 => |path: &Path| sha3_256sum(path),
+        HashAlgorithm::SHA1 => |path: &Path| sha1sum(path),
+        HashAlgorithm::MD5 => |path: &Path| md5sum(path),
+        HashAlgorithm::WHIRLPOOL => |path: &Path| whirlpool_sum(path),
+        HashAlgorithm::RIPEMD160 => |path: &Path| ripemd160_sum(path),
+        HashAlgorithm::BLAKE256 => |path: &Path| blake256_sum(path),
     };
 
     // Calculate list of hashes for the root directory tree
@@ -98,7 +113,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .into_par_iter()
         .map(|e| {
             (
-                sha256sum(e.path()).unwrap_or(String::new()),
+                hash_sum(e.path()).unwrap_or(String::new()),
                 (fs::canonicalize(e.path().to_str().unwrap_or(""))
                     .unwrap()
                     .to_str()
@@ -107,7 +122,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .to_string(),
             )
         })
-        .filter(|pair| !is_empty_hash(pair.0.as_str()))
+        .filter(|pair| !is_empty_hash(pair.0.as_str(), &args.hash_algorithm))
         .collect();
 
     // Calculate list of hashes for the reference directory tree
@@ -132,7 +147,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .into_par_iter()
         .map(|e| {
             (
-                sha256sum(e.path()).unwrap_or(String::new()),
+                hash_sum(e.path()).unwrap_or(String::new()),
                 (fs::canonicalize(e.path().to_str().unwrap_or(""))
                     .unwrap()
                     .to_str()
@@ -141,7 +156,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .to_string(),
             )
         })
-        .filter(|pair| !is_empty_hash(pair.0.as_str()))
+        .filter(|pair| !is_empty_hash(pair.0.as_str(), &args.hash_algorithm))
         .collect();
 
     // Find duplicates

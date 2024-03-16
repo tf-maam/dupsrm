@@ -21,11 +21,16 @@ Arguments:
   <ROOT_DIR>       Root directory path
 
 Options:
-  -d, --dry-run        Perform a dry-run without removing any file
-  -r, --regex <REGEX>  Regular expression filtering files in reference directories
-  -h, --help           Print help
-  -V, --version        Print version
-
+  -n, --dry-run
+          Perform a dry-run without removing any file
+  -r, --regex <REGEX>
+          Regular expression filtering files in reference directories
+  -a, --hash-algorithm <HASH_ALGORITHM>
+          Hash algorithm [default: SHA2-256] [possible values: SHA2-256, SHA3-256, SHA1, MD5, WHIRLPOOL, RIPEMD-160, BLAKE-256]
+  -h, --help
+          Print help
+  -V, --version
+          Print version
 ```
 
 ## Installation
@@ -64,9 +69,9 @@ llvm-cov show --use-color --ignore-filename-regex='/.cargo/registry' --instr-pro
 - [x] Add the command line flags `-n, --dry-run` to don't remove files as in `git rm`
 - [x] Modularize source code into different files
 - [x] Add additional unit tests with an example file structure
-- [ ] Create a docker container for running build tests
+- [x] Create a docker container for running build tests
 - [x] Create Github and Gitlab CI
-- [ ] Modularize the hash function to allow the usage of other hash algorithms
+- [x] Modularize the hash function to allow the usage of other hash algorithms
   - [SHA-3](https://docs.rs/sha3/latest/sha3/)
   - [SHA-2](https://docs.rs/sha1/latest/sha1/)
   - [SHA-1](https://docs.rs/sha2/latest/sha2/)
