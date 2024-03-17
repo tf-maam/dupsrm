@@ -29,6 +29,7 @@ use log::Level;
 use log::{debug, error, info, warn};
 use rayon::prelude::*;
 use regex::Regex;
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
@@ -147,12 +148,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Find duplicates
     debug!("Check for duplicates");
-    let root_hashes: Vec<Vec<u8>> = root_pairs.into_par_iter().map(|p| p.0).collect();
+    let mut root_hashmap: HashMap<Vec<u8>, &PathBuf> = HashMap::new();
+    root_pairs.iter().for_each(|pair| {
+        root_hashmap.insert(pair.0.clone(), &pair.1);
+    });
     let mut duplicate_pairs: Vec<(Vec<u8>, PathBuf)> = reference_pairs
         .into_par_iter()
-        .filter(|pair| root_hashes.contains(&pair.0))
+        .filter(|pair| root_hashmap.contains_key(&pair.0))
         .collect();
     duplicate_pairs.sort_by(|a, b| a.1.cmp(&b.1));
+    info!("{:?}", duplicate_pairs);
 
     if duplicate_pairs.is_empty() {
         info!("No duplicates found");

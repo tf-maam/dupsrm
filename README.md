@@ -84,7 +84,7 @@ llvm-cov show --use-color --ignore-filename-regex='/.cargo/registry' --instr-pro
 - [x] Parallelize iterators and hashing of files in multiple threads
 - [ ] Write documentation with usage examples
 - [ ] Extend logger output
-- [ ] Use a hashmap to find duplicated hashes decreasing the computational complexity
+- [x] Use a hashmap to find duplicated hashes decreasing the computational complexity
 - [x] Add a filter for file types or regex support
 - [x] Use `PathBuf` instead of `String` for paths
 - [x] Wrap hash type with `&str` or fixed size type
