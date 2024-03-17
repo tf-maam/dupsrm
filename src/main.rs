@@ -18,7 +18,10 @@
 use clap::Parser;
 use dupsrm::cli::Cli;
 use dupsrm::error::ArgumentError;
-use dupsrm::hasher::{is_empty_hash, sha256sum};
+use dupsrm::hasher::{
+    blake256_sum, is_empty_hash, md5sum, ripemd160_sum, sha1sum, sha256sum, sha3_256sum,
+    whirlpool_sum, HashAlgorithm,
+};
 use dupsrm::logger::CONSOLE_LOGGER;
 use dupsrm::path::{is_file, is_subdirectory};
 use env_logger::Env;
@@ -26,8 +29,9 @@ use log::Level;
 use log::{debug, error, info, warn};
 use rayon::prelude::*;
 use regex::Regex;
+use std::collections::HashMap;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -76,14 +80,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ));
     }
 
+    // Formulate regex
     match &args.regex {
         Some(str) => info!("regex: \'{}\'", str),
         None => info!("regex: \"\""),
     }
 
-    let regex: Option<Regex> = match args.regex {
-        Some(re_str) => Some(Regex::new(re_str.as_str()).unwrap()),
-        None => None,
+    let regex: Option<Regex> = args
+        .regex
+        .map(|re_str| Regex::new(re_str.as_str()).unwrap());
+
+    // Choose hash function
+    let hash_sum = match args.hash_algorithm {
+        HashAlgorithm::SHA2_256 => |path: &Path| sha256sum(path),
+        HashAlgorithm::SHA3_256 => |path: &Path| sha3_256sum(path),
+        HashAlgorithm::SHA1 => |path: &Path| sha1sum(path),
+        HashAlgorithm::MD5 => |path: &Path| md5sum(path),
+        HashAlgorithm::WHIRLPOOL => |path: &Path| whirlpool_sum(path),
+        HashAlgorithm::RIPEMD160 => |path: &Path| ripemd160_sum(path),
+        HashAlgorithm::BLAKE256 => |path: &Path| blake256_sum(path),
     };
 
     // Calculate list of hashes for the root directory tree
@@ -92,22 +107,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .filter_entry(|e| !is_subdirectory(&e.clone().into_path(), &reference_dir))
         .filter_map(|v| v.ok())
         .collect();
-    let root_files: Vec<DirEntry> = root_dirs.into_par_iter().filter(|e| is_file(e)).collect();
+    let root_files: Vec<DirEntry> = root_dirs.into_par_iter().filter(is_file).collect();
 
-    let root_pairs: Vec<(String, String)> = root_files
+    let root_pairs: Vec<(Vec<u8>, PathBuf)> = root_files
         .into_par_iter()
         .map(|e| {
             (
-                sha256sum(e.path()).unwrap_or(String::new()),
-                (fs::canonicalize(e.path().to_str().unwrap_or(""))
-                    .unwrap()
-                    .to_str()
-                    .to_owned())
-                .unwrap()
-                .to_string(),
+                hash_sum(e.path()).unwrap(),
+                fs::canonicalize(e.path()).unwrap(),
             )
         })
-        .filter(|pair| !is_empty_hash(pair.0.as_str()))
+        .filter(|pair| !is_empty_hash(&pair.0, &args.hash_algorithm))
         .collect();
 
     // Calculate list of hashes for the reference directory tree
@@ -115,10 +125,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .into_iter()
         .filter_map(|v| v.ok())
         .collect();
-    let reference_files: Vec<DirEntry> = reference_dirs
-        .into_par_iter()
-        .filter(|e| is_file(e))
-        .collect();
+    let reference_files: Vec<DirEntry> = reference_dirs.into_par_iter().filter(is_file).collect();
 
     let reference_files: Vec<DirEntry> = reference_files
         .into_par_iter()
@@ -128,32 +135,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .collect();
 
-    let reference_pairs: Vec<(String, String)> = reference_files
+    let reference_pairs: Vec<(Vec<u8>, PathBuf)> = reference_files
         .into_par_iter()
         .map(|e| {
             (
-                sha256sum(e.path()).unwrap_or(String::new()),
-                (fs::canonicalize(e.path().to_str().unwrap_or(""))
-                    .unwrap()
-                    .to_str()
-                    .to_owned())
-                .unwrap()
-                .to_string(),
+                hash_sum(e.path()).unwrap(),
+                fs::canonicalize(e.path()).unwrap(),
             )
         })
-        .filter(|pair| !is_empty_hash(pair.0.as_str()))
+        .filter(|pair| !is_empty_hash(&pair.0, &args.hash_algorithm))
         .collect();
 
     // Find duplicates
     debug!("Check for duplicates");
-    let root_hashes: Vec<String> = root_pairs.into_par_iter().map(|p| p.0).collect();
-    let mut duplicate_pairs: Vec<(String, String)> = reference_pairs
+    let mut root_hashmap: HashMap<Vec<u8>, &PathBuf> = HashMap::new();
+    root_pairs.iter().for_each(|pair| {
+        root_hashmap.insert(pair.0.clone(), &pair.1);
+    });
+    let mut duplicate_pairs: Vec<(Vec<u8>, PathBuf)> = reference_pairs
         .into_par_iter()
-        .filter(|pair| root_hashes.contains(&pair.0))
+        .filter(|pair| root_hashmap.contains_key(&pair.0))
         .collect();
     duplicate_pairs.sort_by(|a, b| a.1.cmp(&b.1));
+    info!("{:?}", duplicate_pairs);
 
-    if duplicate_pairs.len() == 0 {
+    if duplicate_pairs.is_empty() {
         info!("No duplicates found");
         return Ok(());
     }
@@ -162,13 +168,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         duplicate_pairs
             .par_iter()
             .for_each(|pair| match fs::remove_file(&pair.1) {
-                Ok(()) => info!("Removed file {}", pair.1),
-                Err(err) => error!("Removing file {} failed: {}", pair.1, err),
+                Ok(()) => info!("Removed file {}", pair.1.to_str().unwrap()),
+                Err(err) => error!("Removing file {} failed: {}", pair.1.to_str().unwrap(), err),
             });
     } else {
         duplicate_pairs
             .into_par_iter()
-            .for_each(|s| info!("Found {}", s.1));
+            .for_each(|s| info!("Found {}", s.1.to_str().unwrap()));
     }
 
     Ok(())

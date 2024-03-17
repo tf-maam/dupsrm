@@ -21,11 +21,16 @@ Arguments:
   <ROOT_DIR>       Root directory path
 
 Options:
-  -d, --dry-run        Perform a dry-run without removing any file
-  -r, --regex <REGEX>  Regular expression filtering files in reference directories
-  -h, --help           Print help
-  -V, --version        Print version
-
+  -n, --dry-run
+          Perform a dry-run without removing any file
+  -r, --regex <REGEX>
+          Regular expression filtering files in reference directories
+  -a, --hash-algorithm <HASH_ALGORITHM>
+          Hash algorithm [default: SHA2-256] [possible values: SHA2-256, SHA3-256, SHA1, MD5, WHIRLPOOL, RIPEMD-160, BLAKE-256]
+  -h, --help
+          Print help
+  -V, --version
+          Print version
 ```
 
 Usecases
@@ -67,19 +72,27 @@ llvm-cov show --use-color --ignore-filename-regex='/.cargo/registry' --instr-pro
     Use [clap](https://docs.rs/clap/latest/clap/) for command line argument parsing
 - [x] Add the method to remove files
 - [x] Add the command line flags `-n, --dry-run` to don't remove files as in `git rm`
-- [ ] Modularize source code into different files
+- [x] Modularize source code into different files
 - [x] Add additional unit tests with an example file structure
-- [ ] Create a docker container for running build tests
+- [x] Create a docker container for running build tests
 - [x] Create Github and Gitlab CI
-- [ ] Modularize the hash function to allow the usage of other hash algorithms
-- [ ] Benchmark implementation
+- [x] Modularize the hash function to allow the usage of other hash algorithms
+  - [SHA-3](https://docs.rs/sha3/latest/sha3/)
+  - [SHA-2](https://docs.rs/sha1/latest/sha1/)
+  - [SHA-1](https://docs.rs/sha2/latest/sha2/)
+  - [MD5](https://docs.rs/md5/latest/md5/)
+  - [Whirlpool](https://docs.rs/whirlpool/latest/whirlpool/)
+  - [BLAKE](https://docs.rs/blake/latest/blake/)
+  - [RIPEMD](https://docs.rs/ripemd/latest/ripemd/)
+  - [Tiger](https://docs.rs/tiger/latest/tiger/)
+- [x] Benchmark implementation using [cargo-bench](https://doc.rust-lang.org/cargo/commands/cargo-bench.html)
 - [x] Parallelize iterators and hashing of files in multiple threads
 - [ ] Write documentation with usage examples
 - [ ] Extend logger output
-- [ ] Use a hashmap to find duplicated hashes decreasing the computational complexity
+- [x] Use a hashmap to find duplicated hashes decreasing the computational complexity
 - [x] Add a filter for file types or regex support
-- [ ] Use `PathBuf` instead of `String` for paths
-- [ ] Wrap hash type with `&str` or fixed size type
+- [x] Use `PathBuf` instead of `String` for paths
+- [x] Wrap hash type with `&str` or fixed size type
 - [ ] Add a flag to not recurse the reference directory or set a maximum depth
 - [ ] Provide usage examples with regular expression
 - [] Add option to create symlinks or hard links to original files, replacing the removed files in the reference directory
